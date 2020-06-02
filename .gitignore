@@ -8,6 +8,7 @@ docker/transmission/bash_history
 
 # chart deps
 charts/gogs/charts/
+charts/firefly-iii/charts/
 
 # secrets and private files
 secrets.sh

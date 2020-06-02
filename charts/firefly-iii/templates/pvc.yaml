@@ -1,0 +1,17 @@
+{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "firefly-iii.fullname" . }}
+  labels:
+{{ include "firefly-iii.labels" . | indent 4 }}
+spec:
+  accessModes:
+    {{- range .Values.persistence.accessModes }}
+    - {{ . | quote }}
+    {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size | quote }}
+  storageClassName: {{ .Values.persistence.storageClassName }}
+{{- end -}}

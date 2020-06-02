@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "firefly-iii.fullname" . }}
+  labels:
+{{ include "firefly-iii.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "firefly-iii.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  # FIXME
+  strategy:
+    type: Recreate
+    rollingUpdate: null
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+      labels:
+        app.kubernetes.io/name: {{ include "firefly-iii.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      serviceAccountName: {{ template "firefly-iii.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom:
+            - secretRef:
+                name: {{ include "firefly-iii.fullname" . }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /login
+              port: http
+            failureThreshold: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: http
+            failureThreshold: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - mountPath: /var/www/firefly-iii/storage/export
+              name: storage
+              subPath: {{ default "export" .Values.persistence.exportSubPath }}
+            - mountPath: /var/www/firefly-iii/storage/upload
+              name: storage
+              subPath: {{ default "upload" .Values.persistence.uploadSubPath }}
+      volumes:
+        - name: storage
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            {{- if  .Values.persistence.existingClaim }}
+            claimName: {{ .Values.persistence.existingClaim }}
+            {{- else }}
+            claimName: {{ include "firefly-iii.fullname" . }}
+            {{- end -}}
+          {{- else }}
+          emptyDir: {}
+          {{- end -}}  
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}

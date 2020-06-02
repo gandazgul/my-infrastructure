@@ -1,0 +1,22 @@
+apiVersion: v1
+appVersion: "5.2.5"
+description: "Firefly III: a personal finances manager"
+name: firefly-iii
+version: 0.1.7
+home: https://www.firefly-iii.org/
+icon: https://raw.githubusercontent.com/firefly-iii/firefly-iii/master/public/android-chrome-512x512.png
+sources:
+  - https://github.com/firefly-iii/firefly-iii
+  - https://www.firefly-iii.org/
+keywords:
+  - personal finances
+  - money
+  - banking
+maintainers:
+  - name: Gavin Mogan
+    email: helm@gavinmogan.com
+dependencies:
+  - name: postgresql
+    version: 6.5.8
+    repository: https://kubernetes-charts.storage.googleapis.com/
+    condition: postgresql.install

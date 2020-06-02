@@ -1,0 +1,33 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ include "firefly-iii.fullname" . }}
+  labels:
+{{ include "firefly-iii.labels" . | indent 4 }}
+spec:
+  schedule: "*/15 * * * *"
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 2
+  successfulJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            component: "cron"
+        spec:
+          restartPolicy: Never
+          dnsConfig:
+            options:
+              - name: ndots
+                value: "1"
+          containers:
+            - name: cron
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              envFrom:
+                - secretRef:
+                    name: {{ include "firefly-iii.fullname" . }}
+              command: ["/usr/local/bin/php"]
+              args: ["/var/www/firefly-iii/artisan", "firefly:cron"]
+

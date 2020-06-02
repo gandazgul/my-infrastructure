@@ -1,0 +1,46 @@
+# Firefly is a personal finance applications ===========================================================
+
+# NOTE: cli args take precedence over these
+helmDefaults:
+  wait: true
+  timeout: 600
+  force: true
+
+repositories:
+#- name: halkeye
+#  url: https://halkeye.github.io/helm-charts/
+
+releases:
+  - name: firefly-iii
+    namespace: default
+#    chart: halkeye/firefly-iii
+    chart: ../charts/firefly-iii
+    values:
+      - persistence:
+          enabled: true
+          existingClaim: yasr-volume
+          exportSubPath: 'configs/firefly/export'
+          uploadSubPath: 'configs/firefly/upload'
+      - postgresql:
+          persistence:
+            existingClaim: yasr-volume
+            subPath: "configs/firefly/db"
+          volumePermissions:
+            enabled: false
+          securityContext:
+            enabled: true
+            fsGroup: 1000
+            runAsUser: 1000
+      - ingress:
+          enabled: true
+          hosts:
+            - host: firefly.{{ requiredEnv "INGRESS_INTERNAL_NAME" }}
+              paths:
+                - /
+          tls:
+            - hosts:
+                - firefly.{{ requiredEnv "INGRESS_INTERNAL_NAME" }}
+              secretName: firefly-k8s-cert
+          annotations:
+            kubernetes.io/ingress.class: "nginx"
+            cert-manager.io/cluster-issuer: "ca-issuer"
